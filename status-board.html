@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to StarWorld! Leave a status 💋</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
+    body {
+      margin: 0;
+      background: #101010;
+      color: #fff;
+      font-family: 'Montserrat', Arial, sans-serif;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    h1 {
+      font-size: 2.8em;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, #bbb, #fff, #bbb);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 3s linear infinite;
+    }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    .crew-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 32px;
+      max-width: 1280px;
+      width: 100%;
+    }
+    .crew-member {
+      position: relative;
+      background: #1a1a1a;
+      border: 2px solid #2e2e2e;
+      border-radius: 16px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      padding: 24px;
+      text-align: center;
+    }
+    .avatar { width: 180px; height: 180px; margin: 0 auto 16px; border-radius: 50%; overflow: hidden; background: #000; }
+    .avatar img { width:100%; height:100%; object-fit:cover; object-position:center; transform:scale(1.5); transition:transform 0.3s; }
+    .avatar:hover img { transform:scale(1.6); }
+    .name { font-size:1.4em; font-weight:600; margin-bottom:6px; }
+    .title { font-size:1em; font-weight:400; color:#ff8c00; margin-bottom:12px; }
+    .status {
+      text-align: left;
+      background: rgba(255,255,255,0.07);
+      padding: 12px;
+      border-radius: 8px;
+      /* reset to default lines: shorter min-height */
+      min-height: 60px;
+      outline: none;
+      cursor: text;
+      font-size: 0.95em;
+      line-height: 1.4em;
+      transition: background 0.2s;
+      caret-color: #fff;
+    }
+    .status:focus { background:rgba(255,255,255,0.14); }
+    .status:empty:before { content:'Click to leave a status...'; color:rgba(255,255,255,0.5); }
+    .status:hover { background:rgba(255,255,255,0.12); }
+    .save-indicator {
+      position:absolute;
+      bottom:16px;
+      right:24px;
+      font-size:0.7em;
+      color:#aaa;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <h1>Welcome to StarWorld! Leave a status 💋</h1>
+    <div class="crew-board">
+      <div class="crew-member" data-id="star">
+        <div class="avatar"><img src="star.png" alt="Star"></div>
+        <div class="name">Star</div>
+        <div class="title">Captain</div>
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+      <div class="crew-member" data-id="allie">
+        <div class="avatar"><img src="allie.png" alt="Allie"></div>
+        <div class="name">Allie</div>
+        <div class="title">Strategist, Team Lead</div>
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+      <div class="crew-member" data-id="juliverse">
+        <div class="avatar"><img src="juliverse.png" alt="JuliVerse"></div>
+        <div class="name">JuliVerse</div>
+        <div class="title">Illustrator</div>
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+      <div class="crew-member" data-id="alin">
+        <div class="avatar"><img src="alin.png" alt="Alin"></div>
+        <div class="name">Alin</div>
+        <div class="title">Developer</div>
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+      <div class="crew-member" data-id="alexxa">
+        <div class="avatar"><img src="alexxa.png" alt="Alexxa"></div>
+        <div class="name">Alexxa</div>
+        <div class="title">Reels & Social</div>
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+      <div class="crew-member" data-id="nia">
+        <div class="avatar"><img src="nia.png" alt="Nia"></div>
+        <div class="name">Nia</div>
+        <div class="title">Kirtan MC, Temple PA</div>
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+      <div class="crew-member" data-id="jeremiah">
+        <div class="avatar"><img src="jeremiah.png" alt="Jeremiah"></div>
+        <div class="name">Jeremiah</div>
+        <div class="title">House Therapist</div>
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+      <div class="crew-member" data-id="krystle">
+        <div class="avatar"><img src="krystle.png" alt="Krystle"></div>
+        <div class="name">Krystle</div>
+        <div class="title">Temple PA</div>
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.querySelectorAll('.crew-member').forEach(member => {
+      const id = member.dataset.id;
+      const statusEl = member.querySelector('.status');
+      const indicator = member.querySelector('.save-indicator');
+      const key = `status_${id}`;
+      const timeKey = `time_${id}`;
+      // Load content and time
+      const saved = localStorage.getItem(key);
+      const savedTime = localStorage.getItem(timeKey);
+      if (saved !== null) statusEl.textContent = saved;
+      if (savedTime) indicator.textContent = `Last saved: ${new Date(savedTime).toLocaleString()}`;
+      // Save on every input
+      statusEl.addEventListener('input', () => {
+        const now = new Date();
+        localStorage.setItem(key, statusEl.textContent);
+        localStorage.setItem(timeKey, now);
+        indicator.textContent = `Last saved: ${now.toLocaleString()}`;
+      });
+    });
+  </script>
+</body>
+</html>
