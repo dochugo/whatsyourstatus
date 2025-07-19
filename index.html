@@ -55,7 +55,6 @@
       background: rgba(255,255,255,0.07);
       padding: 12px;
       border-radius: 8px;
-      /* reset to default lines: shorter min-height */
       min-height: 60px;
       outline: none;
       cursor: text;
@@ -64,17 +63,20 @@
       transition: background 0.2s;
       caret-color: #fff;
     }
-    .status:focus { background:rgba(255,255,255,0.14); }
-    .status:empty:before { content:'Click to leave a status...'; color:rgba(255,255,255,0.5); }
-    .status:hover { background:rgba(255,255,255,0.12); }
+    .status:focus { background: rgba(255,255,255,0.14); }
+    .status:empty:before { content:'Click to leave a status...'; color: rgba(255,255,255,0.5); }
+    .status:hover { background: rgba(255,255,255,0.12); }
     .save-indicator {
-      position:absolute;
-      bottom:16px;
-      right:24px;
-      font-size:0.7em;
-      color:#aaa;
+      position: absolute;
+      bottom: 16px;
+      right: 24px;
+      font-size: 0.7em;
+      color: #aaa;
     }
   </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-database.js"></script>
 </head>
 <body>
   <div>
@@ -138,27 +140,44 @@
       </div>
     </div>
   </div>
+
   <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCodHoqrdq4a-8lv5F6NSBJ1D-yXI402pU",
+      authDomain: "starworld-status.firebaseapp.com",
+      databaseURL: "https://starworld-status-default-rtdb.firebaseio.com",
+      projectId: "starworld-status",
+      storageBucket: "starworld-status.firebasestorage.app",
+      messagingSenderId: "16992867929",
+      appId: "1:16992867929:web:30e7282dbdbae346414348",
+      measurementId: "G-K5S4V3EV95"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Bind DB ↔ UI
     document.querySelectorAll('.crew-member').forEach(member => {
-      const id = member.dataset.id;
+      const id       = member.dataset.id;
       const statusEl = member.querySelector('.status');
-      const indicator = member.querySelector('.save-indicator');
-      const key = `status_${id}`;
-      const timeKey = `time_${id}`;
-      // Load content and time
-      const saved = localStorage.getItem(key);
-      const savedTime = localStorage.getItem(timeKey);
-      if (saved !== null) statusEl.textContent = saved;
-      if (savedTime) indicator.textContent = `Last saved: ${new Date(savedTime).toLocaleString()}`;
-      // Save on every input
+      const indicator= member.querySelector('.save-indicator');
+      const refPath  = `statuses/${id}`;
+      const dbRef    = db.ref(refPath);
+
+      // Listen for updates
+      dbRef.on('value', snapshot => {
+        const val = snapshot.val() || '';
+        statusEl.textContent = val;
+        indicator.textContent = val
+          ? `Last saved: ${new Date().toLocaleString()}`
+          : 'Never saved';
+      });
+
+      // Save on input
       statusEl.addEventListener('input', () => {
-        const now = new Date();
-        localStorage.setItem(key, statusEl.textContent);
-        localStorage.setItem(timeKey, now);
-        indicator.textContent = `Last saved: ${now.toLocaleString()}`;
+        dbRef.set(statusEl.textContent);
       });
     });
   </script>
 </body>
 </html>
-  
