@@ -1,183 +1,506 @@
+<!--
+  StarWorld Crew Status Board
+  ===========================
+  A real-time, shareable status board inspired by AIM, early Twitter status, and Facebook’s check-ins.
+  Hosted as a static site on Netlify with Firebase Realtime Database for shared, global updates.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to StarWorld! Leave a status 💋</title>
+
+  <!-- Styles: Montserrat, dark theme, shimmer header, grid cards, avatars, editable status -->
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap');
+    *, *::before, *::after { box-sizing: border-box; }
     body {
       margin: 0;
       background: #101010;
-      color: #fff;
-      font-family: 'Montserrat', Arial, sans-serif;
-      padding: 20px;
+      color: #FFFFFF;
+      font-family: 'Montserrat', sans-serif;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
+      padding: clamp(20px,2vw,55px)
     }
     h1 {
-      font-size: 2.8em;
+      font-size: clamp(1.2em,3vw,2.8em);
       font-weight: 800;
-      text-align: center;
-      margin-bottom: 24px;
       text-transform: uppercase;
       letter-spacing: 2px;
-      background: linear-gradient(90deg, #bbb, #fff, #bbb);
+      text-align: center;
+      margin-bottom: clamp(12px,12vw,20px);
+      background: linear-gradient(90deg, #666, #fff, #666);
       background-size: 200% 100%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      animation: shimmer 3s linear infinite;
+      animation: shimmer 5s linear infinite;
+    }
+
+    /* Responsive adjustments for smaller viewports (≤768px) */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: clamp(0.8em,3vw,2em);          /* Compact font size */
+        text-align: left;        /* Left-aligned for readability */
+        margin-bottom: 16px;     /* Reduced margin for tighter layout */
+        letter-spacing: 1px;     /* Slightly tighter letter spacing */
+      }
     }
     @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
     .crew-board {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 32px;
-      max-width: 1280px;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: clamp(12px,9vw,18px);
       width: 100%;
+      max-width: 1600px;
     }
+
+    /* Single breakpoint synchronization at 768px */
+    @media (max-width: 768px) {
+      .crew-board {
+        grid-template-columns: 1fr; /* Exactly one per row below 768px */
+        gap: clamp(4px,1vw,12px); /* Adjusted gap for smaller screens */
+      }
+    }
+
     .crew-member {
-      position: relative;
-      background: #1a1a1a;
-      border: 2px solid #2e2e2e;
-      border-radius: 16px;
+      background: #1A1A1A;
+      border: 2px solid #2E2E2E;
+      border-radius: 8px;
+      padding: 8px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.6);
-      padding: 24px;
+    }
+
+    .member-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px 0;
+    }
+    .member-info {
       text-align: center;
     }
-    .avatar { width: 180px; height: 180px; margin: 0 auto 16px; border-radius: 50%; overflow: hidden; background: #000; }
-    .avatar img { width:100%; height:100%; object-fit:cover; object-position:center; transform:scale(1.5); transition:transform 0.3s; }
-    .avatar:hover img { transform:scale(1.6); }
-    .name { font-size:1.4em; font-weight:600; margin-bottom:6px; }
-    .title { font-size:1em; font-weight:400; color:#ff8c00; margin-bottom:12px; }
+
+    .avatar {
+      /* dynamic width: scales with viewport, between 120px and 180px */
+      width: clamp(120px, 15vw, 180px);
+      height: clamp(120px, 15vw, 180px);
+      margin: 0 auto 5px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #000;
+    }
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      transform: scale(1.6);
+      transition: transform 0.3s;
+    }
+    .avatar:hover img { transform: scale(1.7); }
+
+    .name { font-size: 1.4em; font-weight: 600; margin-bottom: 6px; }
+
+    .title {
+        font-size: 1em;
+        color: #FF8C00;
+        font-variant: all-small-caps;
+        font-weight:400;
+    }
+
+    .member-status {
+      display: flex;
+      flex-direction: column;
+    }
     .status {
-      text-align: left;
       background: rgba(255,255,255,0.07);
-      padding: 12px;
+      padding: 8px 12px;
       border-radius: 8px;
-      min-height: 60px;
+      min-height: 120px;
       outline: none;
       cursor: text;
-      font-size: 0.95em;
-      line-height: 1.4em;
+      font-size: 0.8em;
+      line-height: 1.3em;
+      caret-color: #FFFFFF;
       transition: background 0.2s;
-      caret-color: #fff;
+    }
+    .status {
+      position: relative; /* allows absolute positioning inside */
+    }
+    .status:empty::before {
+      content: attr(data-placeholder);
+      position: absolute;
+      top: 12px; /* Adjust vertically as needed */
+      left: 12px; /* Adjust horizontally as needed */
+      color: rgba(255,255,255,0.5);
+      pointer-events: none; /* Make sure clicks pass through to editable div */
     }
     .status:focus { background: rgba(255,255,255,0.14); }
-    .status:empty:before { content:'Click to leave a status...'; color: rgba(255,255,255,0.5); }
-    .status:hover { background: rgba(255,255,255,0.12); }
-    .save-indicator {
-      position: absolute;
-      bottom: 16px;
-      right: 24px;
-      font-size: 0.7em;
-      color: #aaa;
+
+    .save-indicator { text-align:right; margin-top: 5px; margin-right: 2px;font-size: 0.69em; color: #777; }
+    @keyframes pulseShimmer {
+      0% {
+        color: #777;
+        text-shadow: none;
+      }
+      50% {
+        color: #FFF;
+        text-shadow: 0 0 12px rgba(255,255,255,0.7);
+      }
+      100% {
+        color: #777;
+        text-shadow: none;
+      }
     }
+
+    .save-indicator.pulse {
+      animation: pulseShimmer 1.2s ease-in-out;
+    }
+
+    /* Single breakpoint: iPad and smaller (<=768px) */
+    @media (max-width: 768px) {
+
+        .member-content {
+          flex-direction: row;
+          align-items: flex-start;
+        }
+
+        .member-info {
+          flex: 0 0 auto;
+          text-align: left;
+          margin-right: 0;
+          max-width: clamp(80px, 20vw, 120px);
+          width: clamp(80px, 20vw, 120px); /* Explicitly set width equal to max-width */
+        }
+
+        .avatar {
+          width: 100%; /* take full width of member-info */
+          height: auto;
+          aspect-ratio: 1 / 1;
+          border-radius: 16px 0 0 16px;
+          transform: scale(1.0);
+          object-fit: cover;
+          margin: 0 0 1px 0;
+        }
+
+      .name, .title {
+        display: inline; /* now inline horizontally flush */
+        line-height: 1.2;
+      }
+      .name { 
+        font-size: clamp(0.6em, 2vw, 1.2em); 
+        margin-bottom: 0;
+        text-transform: uppercase;
+      }
+
+      .title { 
+        font-size: clamp(0.6em, 2vw, 1.2em);
+        margin: 0;
+        font-weight:600;
+    }
+
+      .member-status {
+        flex: 1 1 auto;
+        padding-top: 0;
+      }
+
+      .member-text {
+        margin-left: 8px;
+        white-space: nowrap;      /* Forces horizontal layout without wrapping */
+        overflow: visible;        /* Allows overflow visually */
+      }
+      .status { 
+        font-size: clamp(0.7em, 2.5vw, 0.9em); 
+        min-height: clamp(80px, 20vw, 120px); /* restore previous height for visual harmony */
+        border-radius: 0 8px 8px 0;
+      }
+
+      .save-indicator { 
+        font-size: 0.7em; 
+      }
+    }
+
   </style>
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-database.js"></script>
+
+  <!-- Firebase & Realtime DB (modular) -->
+
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js';
+      import { getAnalytics } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js';
+      import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js';
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCodHoqrdq4a-8lv5F6NSBJlD-yXl4O2pU",
+        authDomain: "starworld-status.firebaseapp.com",
+        databaseURL: "https://starworld-status-default-rtdb.firebaseio.com",
+        projectId: "starworld-status",
+        storageBucket: "starworld-status.firebasestorage.app",
+        messagingSenderId: "16992867929",
+        appId: "1:16992867929:web:30e7282dbdbae346414348",
+        measurementId: "G-K5S4V3EV95"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      const db = getDatabase(app);
+
+      const statusPrompts = [
+          "What are you working on today?",
+          "Are you at therapy and will be back mid-afternoon?",
+          "Are you working late night and open to chatting with others?",
+          "Interested in co-working over Google Meet?",
+          "Having a rough day? Need a friend?",
+          "Feeling blocked? What do you need? Speak up!",
+          "Kicking ass and being productive?",
+          "What are you doing this weekend?",
+          "Looking to do something with the team? Plan an outing!",
+          "How can the team support you today?",
+          "Do you feel inspired by something and want to share it?"
+        ];
+
+      function getRandomPrompt() {
+          const index = Math.floor(Math.random() * statusPrompts.length);
+          return statusPrompts[index];
+        }
+
+        // Set random placeholder prompts on page load:
+        document.querySelectorAll('.status').forEach(statusEl => {
+          if (!statusEl.textContent.trim()) {
+            statusEl.setAttribute('data-placeholder', `Click to leave a status... ${getRandomPrompt()}`);
+          }
+        });// Update placeholder whenever users edit their status:
+        document.querySelectorAll('.status').forEach(statusEl => {
+          statusEl.addEventListener('input', () => {
+            if (!statusEl.textContent.trim()) {
+              statusEl.setAttribute('data-placeholder', `Click to leave a status... ${getRandomPrompt()}`);
+            } else {
+              statusEl.removeAttribute('data-placeholder');
+            }
+          });
+        });
+
+        function formatTimeAgo(pastTimestamp) {
+          const secondsAgo = Math.floor((Date.now() - pastTimestamp) / 1000);
+
+          if (secondsAgo < 60) return `${secondsAgo}s ago`;
+          const minutesAgo = Math.floor(secondsAgo / 60);
+          if (minutesAgo < 60) return `${minutesAgo}m ago`;
+          const hoursAgo = Math.floor(minutesAgo / 60);
+          if (hoursAgo < 24) return `${hoursAgo}h ago`;
+          const daysAgo = Math.floor(hoursAgo / 24);
+          return `${daysAgo}d ago`;
+        }
+      // Simple debounce function
+      function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+      }
+
+      document.querySelectorAll('.crew-member').forEach(member => {
+        const id = member.dataset.id;
+        const statusEl = member.querySelector('.status');
+        const indicator = member.querySelector('.save-indicator');
+        const dbRef = ref(db, `statuses/${id}`);
+
+        onValue(dbRef, snapshot => {
+          const data = snapshot.val() || {text: '', timestamp: null};
+          const text = data.text || '';
+          const timestamp = data.timestamp;
+
+          statusEl.textContent = text;
+
+          if (text && timestamp) {
+            indicator.dataset.lastSavedTime = timestamp;
+            indicator.textContent = `Last saved: ${formatTimeAgo(timestamp)}`;
+            member.dataset.lastSavedTime = timestamp; // NEW: store timestamp on member div
+          } else {
+            indicator.dataset.lastSavedTime = '';
+            indicator.textContent = 'Never saved';
+            member.dataset.lastSavedTime = 0; // older timestamp for sorting
+          }
+
+          reorderCrewMembers(); // Call the sorting function whenever a new update comes
+        });
+
+        // === Interval function to refresh timestamps ===
+          setInterval(() => {
+            document.querySelectorAll('.save-indicator').forEach(indicator => {
+              const lastSavedTime = indicator.dataset.lastSavedTime;
+              if (lastSavedTime) {
+                indicator.textContent = `Last saved: ${formatTimeAgo(parseInt(lastSavedTime))}`;
+              }
+            });
+          }, 10000); // refreshes every 10 seconds
+          // ===========================================================
+
+        // Debounced event listener (500ms)
+        statusEl.addEventListener('input', debounce(() => {
+          const currentTime = Date.now();
+          set(dbRef, {
+            text: statusEl.textContent,
+            timestamp: currentTime
+          });
+
+          indicator.dataset.lastSavedTime = currentTime;
+          indicator.textContent = 'Last saved: Just now';
+
+          indicator.classList.remove('pulse');
+          void indicator.offsetWidth;
+          indicator.classList.add('pulse');
+        }, 500));
+
+        function reorderCrewMembers() {
+          const board = document.querySelector('.crew-board');
+          const members = Array.from(board.children);
+
+          members.sort((a, b) => {
+            const aTime = parseInt(a.dataset.lastSavedTime) || 0;
+            const bTime = parseInt(b.dataset.lastSavedTime) || 0;
+
+            return bTime - aTime; // most recent first
+          });
+
+          members.forEach(member => board.appendChild(member));
+        }
+      });
+    </script>
 </head>
 <body>
-  <div>
-    <h1>Welcome to StarWorld! Leave a status 💋</h1>
-    <div class="crew-board">
-      <div class="crew-member" data-id="star">
+  <h1>Welcome to StarWorld! Leave a status 💋</h1>
+  <div class="crew-board">
+  <div class="crew-member" data-id="star">
+    <div class="member-content">
+      <div class="member-info">
         <div class="avatar"><img src="star.png" alt="Star"></div>
-        <div class="name">Star</div>
-        <div class="title">Captain</div>
-        <div class="status" contenteditable="true"></div>
-        <div class="save-indicator">Never saved</div>
+        <div class="member-text">
+          <span class="name">Star</span>
+          <span class="title">Captain</span>
+        </div>
       </div>
-      <div class="crew-member" data-id="allie">
-        <div class="avatar"><img src="allie.png" alt="Allie"></div>
-        <div class="name">Allie</div>
-        <div class="title">Strategist, Team Lead</div>
-        <div class="status" contenteditable="true"></div>
-        <div class="save-indicator">Never saved</div>
-      </div>
-      <div class="crew-member" data-id="juliverse">
-        <div class="avatar"><img src="juliverse.png" alt="JuliVerse"></div>
-        <div class="name">JuliVerse</div>
-        <div class="title">Illustrator</div>
-        <div class="status" contenteditable="true"></div>
-        <div class="save-indicator">Never saved</div>
-      </div>
-      <div class="crew-member" data-id="alin">
-        <div class="avatar"><img src="alin.png" alt="Alin"></div>
-        <div class="name">Alin</div>
-        <div class="title">Developer</div>
-        <div class="status" contenteditable="true"></div>
-        <div class="save-indicator">Never saved</div>
-      </div>
-      <div class="crew-member" data-id="alexxa">
-        <div class="avatar"><img src="alexxa.png" alt="Alexxa"></div>
-        <div class="name">Alexxa</div>
-        <div class="title">Reels & Social</div>
-        <div class="status" contenteditable="true"></div>
-        <div class="save-indicator">Never saved</div>
-      </div>
-      <div class="crew-member" data-id="nia">
-        <div class="avatar"><img src="nia.png" alt="Nia"></div>
-        <div class="name">Nia</div>
-        <div class="title">Kirtan MC, Temple PA</div>
-        <div class="status" contenteditable="true"></div>
-        <div class="save-indicator">Never saved</div>
-      </div>
-      <div class="crew-member" data-id="jeremiah">
-        <div class="avatar"><img src="jeremiah.png" alt="Jeremiah"></div>
-        <div class="name">Jeremiah</div>
-        <div class="title">House Therapist</div>
-        <div class="status" contenteditable="true"></div>
-        <div class="save-indicator">Never saved</div>
-      </div>
-      <div class="crew-member" data-id="krystle">
-        <div class="avatar"><img src="krystle.png" alt="Krystle"></div>
-        <div class="name">Krystle</div>
-        <div class="title">Temple PA</div>
+      <div class="member-status">
         <div class="status" contenteditable="true"></div>
         <div class="save-indicator">Never saved</div>
       </div>
     </div>
   </div>
 
-  <script>
-    // Initialize Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyCodHoqrdq4a-8lv5F6NSBJ1D-yXI402pU",
-      authDomain: "starworld-status.firebaseapp.com",
-      databaseURL: "https://starworld-status-default-rtdb.firebaseio.com",
-      projectId: "starworld-status",
-      storageBucket: "starworld-status.firebasestorage.app",
-      messagingSenderId: "16992867929",
-      appId: "1:16992867929:web:30e7282dbdbae346414348",
-      measurementId: "G-K5S4V3EV95"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  <div class="crew-member" data-id="allie">
+    <div class="member-content">
+      <div class="member-info">
+        <div class="avatar"><img src="allie.png" alt="Allie"></div>
+        <div class="member-text">
+          <span class="name">Allie</span>
+          <span class="title">Strategy</span>
+        </div>
+      </div>
+      <div class="member-status">
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+    </div>
+  </div>
 
-    // Bind DB ↔ UI
-    document.querySelectorAll('.crew-member').forEach(member => {
-      const id       = member.dataset.id;
-      const statusEl = member.querySelector('.status');
-      const indicator= member.querySelector('.save-indicator');
-      const refPath  = `statuses/${id}`;
-      const dbRef    = db.ref(refPath);
+  <div class="crew-member" data-id="juliverse">
+    <div class="member-content">
+      <div class="member-info">
+        <div class="avatar"><img src="juliverse.png" alt="JuliVerse"></div>
+        <div class="member-text">
+          <span class="name">Juli</span>
+          <span class="title">Illustrator</span>
+        </div>
+      </div>
+      <div class="member-status">
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+    </div>
+  </div>
 
-      // Listen for updates
-      dbRef.on('value', snapshot => {
-        const val = snapshot.val() || '';
-        statusEl.textContent = val;
-        indicator.textContent = val
-          ? `Last saved: ${new Date().toLocaleString()}`
-          : 'Never saved';
-      });
+  <div class="crew-member" data-id="alin">
+    <div class="member-content">
+      <div class="member-info">
+        <div class="avatar"><img src="alin.png" alt="Alin"></div>
+        <div class="member-text">
+          <span class="name">Alin</span>
+          <span class="title">Developer</span>
+        </div>
+      </div>
+      <div class="member-status">
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+    </div>
+  </div>
 
-      // Save on input
-      statusEl.addEventListener('input', () => {
-        dbRef.set(statusEl.textContent);
-      });
-    });
-  </script>
+  <div class="crew-member" data-id="alexxa">
+    <div class="member-content">
+      <div class="member-info">
+        <div class="avatar"><img src="alexxa.png" alt="Alexxa"></div>
+        <div class="member-text">
+          <span class="name">Alexxa</span>
+          <span class="title">Reels/IG</span>
+        </div>
+      </div>
+      <div class="member-status">
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="crew-member" data-id="nia">
+    <div class="member-content">
+      <div class="member-info">
+        <div class="avatar"><img src="nia.png" alt="Nia"></div>
+        <div class="member-text">
+          <span class="name">Nia</span>
+          <span class="title">Kirtan/Temple</span>
+        </div>
+      </div>
+      <div class="member-status">
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="crew-member" data-id="jeremiah">
+    <div class="member-content">
+      <div class="member-info">
+        <div class="avatar"><img src="jeremiah.png" alt="Jeremiah"></div>
+        <div class="member-text">
+          <span class="name">Jeremiah</span>
+          <span class="title">Hands</span>
+        </div>
+      </div>
+      <div class="member-status">
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="crew-member" data-id="krystle">
+    <div class="member-content">
+      <div class="member-info">
+        <div class="avatar"><img src="krystle.png" alt="Krystle"></div>
+        <div class="member-text">
+          <span class="name">Krystle</span>
+          <span class="title">Craft/Temple</span>
+        </div>
+      </div>
+      <div class="member-status">
+        <div class="status" contenteditable="true"></div>
+        <div class="save-indicator">Never saved</div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
