@@ -48,8 +48,7 @@
     // Load crew members from CSV
     document.addEventListener('DOMContentLoaded', async () => {
       const rawCsv = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSGJIsPg6buMXJoOvQFH9QM0-yqN5ZuY61Qm8pqE_DA-t6Q0F0erryj2jTN8kdybvZ-g7fFWBuhv0v5/pub?gid=720196244&single=true&output=csv';
-      const proxy = 'https://api.allorigins.win/raw?url=';
-
+      const proxy = 'https://corsproxy.io/?';
       const board = document.querySelector('.crew-board');
 
       const resp = await fetch(proxy + encodeURIComponent(rawCsv));
