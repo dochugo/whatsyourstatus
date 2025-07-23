@@ -32,18 +32,24 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Listen for status updates
+    // Track editing state for each status box
+    let isEditing = {};
+
+    // Listen for status updates (Firebase listener adjusted)
     onValue(ref(db, 'statuses'), snapshot => {
       const data = snapshot.val() || {};
+
       Object.entries(data).forEach(([id, { text, timestamp }]) => {
         const statusEl = document.querySelector(`.crew-member[data-id="${id}"] .status`);
         const indEl = document.querySelector(`.crew-member[data-id="${id}"] .save-indicator`);
-        if (statusEl && indEl) {
+
+        if (statusEl && indEl && !isEditing[id]) { // Only update if not actively editing
           statusEl.textContent = text;
           indEl.textContent = formatTimeAgo(timestamp);
         }
       });
     });
+
 
     // Load crew members from CSV
     document.addEventListener('DOMContentLoaded', async () => {
